@@ -168,3 +168,5 @@ pip-log.txt
 
 #Crestron
 *.asv
+*.sm2
+
