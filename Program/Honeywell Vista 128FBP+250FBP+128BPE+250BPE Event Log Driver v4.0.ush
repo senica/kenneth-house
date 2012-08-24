@@ -1,0 +1,80 @@
+[BEGIN]
+  Version=1
+[END]
+[BEGIN]
+  ObjTp=FSgntr
+  Sgntr=UserSPlus
+  RelVrs=1
+  IntStrVrs=1
+  SPlusVrs=3.03.16
+  CrossCplrVrs=1.3
+[END]
+[BEGIN]
+  ObjTp=Symbol
+  Exclusions=1,19,20,21,88,89,310,718,756,854,
+  Exclusions_CDS=5
+  Name=Honeywell Vista 128/250FBP + 128/250BPE Event Log Driver v4.0
+  SmplCName=Honeywell Vista 128FBP+250FBP+128BPE+250BPE Event Log Driver v4.0.usp
+  Code=1
+  SysRev5=4.000
+  SMWRev=2.02.05
+  InputList2Cue1=From_Device$
+  InputList2SigType1=Serial
+  OutputList2Cue1=Zone_Status[#]
+  OutputList2SigType1=Analog
+  ParamCue1=[Reference Name]
+  MinVariableInputs=0
+  MaxVariableInputs=0
+  MinVariableInputsList2=1
+  MaxVariableInputsList2=1
+  MinVariableOutputs=0
+  MaxVariableOutputs=0
+  MinVariableOutputsList2=1
+  MaxVariableOutputsList2=250
+  MinVariableParams=0
+  MaxVariableParams=0
+  Expand=expand_separately
+  Expand2=expand_separately
+  ProgramTree=Logic
+  SymbolTree=21
+  Hint=
+  PdfHelp=
+  HelpID= 
+  Render=4
+  Smpl-C=16
+  CompilerCode=-48
+  CompilerParamCode=27
+  CompilerParamCode5=14
+  NumFixedParams=1
+  Pp1=1
+  MPp=1
+  NVStorage=10
+  ParamSigType1=String
+  SmplCInputCue1=o#
+  SmplCOutputCue1=i#
+  SmplCInputList2Cue1=an#
+  SmplCOutputList2Cue1=ai#
+  SPlus2CompiledName=S2_Honeywell_Vista_128FBP_250FBP_128BPE_250BPE_Event_Log_Driver_v4_0
+  SymJam=NonExclusive
+  FileName=Honeywell Vista 128FBP+250FBP+128BPE+250BPE Event Log Driver v4.0.ush
+  Usl1=lib standard.usl
+  Usl2=lib setup switchers.usl
+  Usl3=lib setup common.usl
+  Usl4=lib setup touchpanels.usl
+  Usl5=lib setup remotes.usl
+  Usl6=lib setup keypads.usl
+  Usl7=lib standard.usl
+  Usl8=lib setup switchers.usl
+  Usl9=lib setup common.usl
+  Usl10=lib setup touchpanels.usl
+  Usl11=lib setup remotes.usl
+  Usl12=lib setup keypads.usl
+  Usl13=lib xml.usl
+  Usl14=lib setup lists.usl
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=1
+  Tp=1
+  NoS=False
+[END]

@@ -1,0 +1,27 @@
+[Entries]
+MC3=tcp 192.168.1.50
+CP2E=tcp 192.168.1.60
+TPS-6L 05=tcp 192.168.1.70
+TPS-6L 06=tcp 192.168.1.71
+TPS-6L 08=tcp 192.168.1.72
+TPS-6L 09=tcp 192.168.1.73
+TPS-6L 0A=tcp 192.168.1.74
+TPS-6L 0B=tcp 192.168.1.75
+TPS-4000 04=MC3:cresnet 04
+TPS-4000 0C=MC3:cresnet 0C
+
+[Settings]
+DefaultEntry=MC3
+
+[Comments]
+MC3=Main
+CP2E=Lights, Climate, Security
+TPS-6L 05=Dining Room
+TPS-6L 06=Master Bedroom
+TPS-6L 08=Her Bathroom
+TPS-6L 09=Kitchen
+TPS-6L 0A=Guest Bedroom 2
+TPS-6L 0B=Sophie's Bedroom
+TPS-4000 04=Hallway
+TPS-4000 0C=His Bathroom
+

@@ -1,0 +1,142 @@
+/*
+ *
+ * Adelyte Company
+ * www.adelyte.com
+ *
+ */
+
+// Compiler Directives
+
+#SYMBOL_NAME "Lutron HWI Keypad"
+#DEFAULT_VOLATILE
+#ENABLE_DYNAMIC
+
+
+// Constants
+
+#DEFINE_CONSTANT COMMAND_LEN  29
+
+#DEFINE_CONSTANT MAX_BUTTONS  15
+
+
+// Inputs and Outputs
+
+STRING_INPUT   From_Central[COMMAND_LEN];
+STRING_OUTPUT  To_Central;
+
+DIGITAL_INPUT  Raise, Dim;
+
+DIGITAL_INPUT  Press[MAX_BUTTONS];
+DIGITAL_OUTPUT Press_Fb[MAX_BUTTONS], Indicator[MAX_BUTTONS];
+
+// Parameters
+
+
+// Functions
+
+FUNCTION SendPress(INTEGER button, STRING command)
+{
+    MAKESTRING(To_Central, "%s %u", command, button);
+}
+
+FUNCTION SendIndicator(INTEGER indicator, INTEGER state)
+{
+    STRING command[COMMAND_LEN];
+
+    MAKESTRING(command, "xxxxxxxxxxxxxxxxxxxxxxxx");
+
+    SETSTRING(ITOA(state), indicator, command);
+
+    MAKESTRING(command, "SET %s", command);
+}
+
+
+// Event Handlers
+
+CHANGE From_Central
+{
+    INTEGER button;
+
+    STRING  command[3];
+
+    command = LEFT(From_Central, 3);
+
+    IF(command = "KLS")  // Keypad LED State; example: "KLS 000101001100110".
+    {
+        FOR(button = 1 TO MAX_BUTTONS)
+        {
+            Indicator[button] = ATOI( MID(From_Central, button + 4, 1) );
+        }
+    }
+    ELSE IF(command = "KBP")  // Keypad Button Press; example: "KBP 4".
+    {
+        button = ATOI( MID(From_Central, 5, 1) );
+
+        Press_Fb[button] = 1;
+    }
+    ELSE IF(command = "KBR")  // Keypad Button Press; example: "KBR 5".
+    {
+        button = ATOI( MID(From_Central, 5, 1) );
+
+        Press_Fb[button] = 0;
+    }
+    ELSE
+    {
+        // NOT REACHED.
+    }
+}
+
+PUSH Raise
+{
+    SendPress(23, "KBP");
+}
+
+RELEASE Raise
+{
+    SendPress(23, "KBR");
+}
+
+PUSH Dim
+{
+    SendPress(24, "KBP");
+}
+
+RELEASE Dim
+{
+    SendPress(24, "KBR");
+}
+
+PUSH Press
+{
+    INTEGER button;
+
+    button = GETLASTMODIFIEDARRAYINDEX();
+
+    SendPress(button, "KBP");
+}
+
+RELEASE Press
+{
+    INTEGER button;
+
+    button = GETLASTMODIFIEDARRAYINDEX();
+
+    SendPress(button, "KBR");
+}
+
+
+// Runtime
+
+FUNCTION MAIN()
+{
+    INTEGER button;
+
+	SIGNED_INTEGER returnError;
+
+	returnError = WAITFORINITIALIZATIONCOMPLETE();
+
+	IF(returnError < 0)
+	{
+		PRINT("Error waiting for initialization.\n");
+	}
+}

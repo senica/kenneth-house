@@ -1,0 +1,65 @@
+/*
+ * Adelyte Company
+ * www.adelyte.com
+ */
+
+#SYMBOL_NAME "Telnet"
+#CATEGORY "12" // System Control
+#DEFAULT_VOLATILE
+#ENABLE_DYNAMIC
+#ENABLE_TRACE
+
+// Inputs and Outputs
+
+DIGITAL_INPUT  Connected;
+DIGITAL_OUTPUT Connect;
+
+STRING_INPUT  TCP_RX$[255];
+STRING_OUTPUT TCP_TX$;
+BUFFER_INPUT  Command_TX$[511];
+
+STRING_PARAMETER Login[64], Password[64], Prompt[32];
+
+// Events
+
+PUSH Connected
+{
+    MAKESTRING(TCP_TX$, "%s\r%s\r", Login, Password);
+}
+
+CHANGE TCP_RX$
+{
+    STRING response[255], command[255];
+    
+    response = TCP_RX$;
+    
+    IF(FIND(Prompt, response) > 0)
+    {
+        command = REMOVE("\r", Command_TX$);
+         
+        IF(command != "")
+            MAKESTRING(TCP_TX$, "%s", command);
+        ELSE
+        {
+            CLEARBUFFER(Command_TX$);
+            Connect = 0;
+        }
+    }
+}
+
+CHANGE Command_TX$
+{
+    STRING command[255];
+    
+    IF(Connected)
+    {
+        command = REMOVE("\r", Command_TX$);
+        
+        IF(command != "")
+            MAKESTRING(TCP_TX$, "%s", command);
+    }
+    ELSE
+    {
+        Connect = 1;
+    }
+}

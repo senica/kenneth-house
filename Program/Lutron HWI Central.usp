@@ -1,0 +1,367 @@
+/*
+ *
+ * Adelyte Company
+ * www.adelyte.com
+ *
+ */
+
+// Compiler Directives
+
+#SYMBOL_NAME "Lutron HWI Central"
+#DEFAULT_VOLATILE
+
+
+// Constants
+
+// #DEFINE_CONSTANT DEBUG 1  // Comment out to stop PRINT statements.
+
+#DEFINE_CONSTANT BUFFER_SIZE   1023
+
+#DEFINE_CONSTANT ACTION_LEN       7
+#DEFINE_CONSTANT COMMAND_LEN     64
+#DEFINE_CONSTANT LOCATION_LEN    10
+#DEFINE_CONSTANT STATE_LEN       24
+
+#DEFINE_CONSTANT MAX_KEYPADS     24
+#DEFINE_CONSTANT MAX_PROCESSORS   1
+#DEFINE_CONSTANT MAX_LINKS        6
+#DEFINE_CONSTANT MAX_ADDRESSES   48
+#DEFINE_CONSTANT MAX_BUTTONS     15
+
+#DEFINE_CONSTANT DEFAULT_KEYPAD   1
+
+
+// Inputs and Outputs
+
+DIGITAL_INPUT  Time_Clocks_Enable, 
+               Time_Clocks_Disable, 
+               Time_Clocks_Toggle;
+DIGITAL_OUTPUT Time_Clocks_FB;
+
+DIGITAL_INPUT  Security_Mode_Enable, 
+               Security_Mode_Disable, 
+               Security_Mode_Toggle;
+DIGITAL_OUTPUT Security_Mode_FB;
+
+BUFFER_INPUT   Lutron_RX$[BUFFER_SIZE];
+STRING_OUTPUT  Lutron_TX$;
+
+STRING_INPUT   Keypad_In[MAX_KEYPADS][COMMAND_LEN];
+STRING_OUTPUT  Keypad_Out[MAX_KEYPADS];
+
+
+// Global Data
+
+INTEGER KeypadProcessors[MAX_KEYPADS], 
+        KeypadLinks[MAX_KEYPADS], 
+        KeypadAddresses[MAX_KEYPADS];
+
+STRUCTURE structProcessor
+{
+    INTEGER Address[MAX_LINKS][MAX_ADDRESSES];
+};
+
+structProcessor  Processors[MAX_PROCESSORS];
+
+
+// Setup.
+
+FUNCTION InitializeKeypads()
+{
+    INTEGER keypad, processor, link, address;
+
+    SETARRAY(KeypadProcessors, 0);
+    SETARRAY(KeypadLinks, 0);
+    SETARRAY(KeypadAddresses, 0);
+
+
+    // Available keypads
+
+
+    // Keypad Addresses
+    
+    // Scenes
+    KeypadAddresses[01] =  02 ;    KeypadLinks[01] = 6 ;    KeypadProcessors[01] = 1 ;  // Kitchen
+    KeypadAddresses[02] =  03 ;    KeypadLinks[02] = 6 ;    KeypadProcessors[02] = 1 ;  // Library
+    KeypadAddresses[03] =  04 ;    KeypadLinks[03] = 6 ;    KeypadProcessors[03] = 1 ;  // Hallway
+    KeypadAddresses[04] =  05 ;    KeypadLinks[04] = 6 ;    KeypadProcessors[04] = 1 ;  // Bedroom 2
+    KeypadAddresses[05] =  06 ;    KeypadLinks[05] = 6 ;    KeypadProcessors[05] = 1 ;  // Her Bathroom
+    KeypadAddresses[06] =  07 ;    KeypadLinks[06] = 6 ;    KeypadProcessors[06] = 1 ;  // His Bathroom
+    KeypadAddresses[07] =  08 ;    KeypadLinks[07] = 6 ;    KeypadProcessors[07] = 1 ;  // Master Bedroom
+    KeypadAddresses[08] =  09 ;    KeypadLinks[08] = 6 ;    KeypadProcessors[08] = 1 ;  // Master Bedroom Hall
+    KeypadAddresses[09] =  10 ;    KeypadLinks[09] = 6 ;    KeypadProcessors[09] = 1 ;  // Dining Room
+    KeypadAddresses[10] =  11 ;    KeypadLinks[10] = 6 ;    KeypadProcessors[10] = 1 ;  // Living Room
+	KeypadAddresses[11] =  29 ;    KeypadLinks[11] = 6 ;    KeypadProcessors[11] = 1 ;  // Office
+    KeypadAddresses[12] =  32 ;    KeypadLinks[12] = 6 ;    KeypadProcessors[12] = 1 ;  // Foyer
+
+    
+    // Loads
+    KeypadAddresses[13] =  12 ;    KeypadLinks[13] = 6 ;    KeypadProcessors[13] = 1 ;  // Kitchen
+	KeypadAddresses[14] =  13 ;    KeypadLinks[14] = 6 ;    KeypadProcessors[14] = 1 ;  // Library
+	KeypadAddresses[15] =  14 ;    KeypadLinks[15] = 6 ;    KeypadProcessors[15] = 1 ;  // Hallway
+	KeypadAddresses[16] =  15 ;    KeypadLinks[16] = 6 ;    KeypadProcessors[16] = 1 ;  // Bedroom 2
+	KeypadAddresses[17] =  16 ;    KeypadLinks[17] = 6 ;    KeypadProcessors[17] = 1 ;  // Her Bathroom
+	KeypadAddresses[18] =  17 ;    KeypadLinks[18] = 6 ;    KeypadProcessors[18] = 1 ;  // His Bathroom
+	KeypadAddresses[19] =  18 ;    KeypadLinks[19] = 6 ;    KeypadProcessors[19] = 1 ;  // Master Bedroom
+	KeypadAddresses[20] =  19 ;    KeypadLinks[20] = 6 ;    KeypadProcessors[20] = 1 ;  // Global
+	KeypadAddresses[21] =  20 ;    KeypadLinks[21] = 6 ;    KeypadProcessors[21] = 1 ;  // Dining Room
+	KeypadAddresses[22] =  21 ;    KeypadLinks[22] = 6 ;    KeypadProcessors[22] = 1 ;  // Living Room
+	KeypadAddresses[23] =  22 ;    KeypadLinks[23] = 6 ;    KeypadProcessors[23] = 1 ;  // Office    
+	KeypadAddresses[24] =  23 ;    KeypadLinks[24] = 6 ;    KeypadProcessors[24] = 1 ;  // Playroom
+    FOR(keypad = 1 TO MAX_KEYPADS)  // Reverse-index the processors, links, and addresses for all keypads.
+    {
+        processor = KeypadProcessors[keypad];
+
+        link = KeypadLinks[keypad];
+
+        address = KeypadAddresses[keypad];
+
+        Processors[processor].Address[link][address] = keypad;
+    }
+
+    FOR(keypad = 1 TO MAX_KEYPADS)
+    {
+        IF(KeypadAddresses[keypad] != 0)
+        {
+            MAKESTRING(Lutron_TX$, "RKLS, [%u:%u:%u]\r", KeypadProcessors[keypad], KeypadLinks[keypad], KeypadAddresses[keypad]);
+
+            DELAY(10);
+        }
+    }
+}
+
+
+// From Lutron.
+
+CHANGE Lutron_RX$
+{
+    INTEGER startPos, endPos, processor, link, address, keypad;
+
+    STRING  command[COMMAND_LEN], action[ACTION_LEN], location[LOCATION_LEN], state[STATE_LEN], button[2];
+
+    WHILE(FIND("\r", Lutron_RX$))
+    {
+        command = REMOVE("\r", Lutron_RX$);
+
+        #IF_DEFINED DEBUG
+
+            PRINT("DEBUG: lutron hwi central logic.usp\n");
+            PRINT("    command = '%s'.", command);
+
+        #ENDIF
+
+        IF(LEFT(command, 1) = "K")  // Keypad Commands.
+        {
+            startPos = FIND(",", command);
+            action = LEFT(command, startPos - 1);
+
+            startPos = FIND("[", command);
+            endPos = FIND(":", command);
+            location = MID(command, startPos, endPos - startPos);
+            processor = ATOI(location);
+
+            startPos = endPos;
+            endPos = FIND(":", command, endPos + 1);
+            location = MID(command, startPos, endPos - startPos);
+            link = ATOI(location);
+
+            startPos = endPos;
+            endPos = FIND("]", command, endPos + 1);
+            location = MID(command, startPos, endPos - startPos);
+            address = ATOI(location);
+
+            keypad = Processors[processor].Address[link][address]; 
+
+            #IF_DEFINED DEBUG
+
+                PRINT("    Keypad Command Received\n");
+                PRINT("        processor = %u,\n", processor);
+                PRINT("        link      = %u,\n", link);
+                PRINT("        address   = %u,\n", address);
+                PRINT("        keypad    = %u,\n", keypad);
+                PRINT("        action    = %s.\n", action);
+
+            #ENDIF
+
+            IF(keypad =  0)
+            {
+                action = "N/A";  // Ignore information for keypads not defined during initialization.
+            }
+            ELSE
+            {
+                // CONTINUE.
+            }
+
+            IF(action = "KLS")
+            {
+                state = RIGHT(command, STATE_LEN + 1);
+
+                MAKESTRING(Keypad_Out[keypad], "KLS %s", LEFT(state, 15));
+            }
+            ELSE IF(action = "KBP")
+            {
+                button = RIGHT(command, 2);
+
+                MAKESTRING(Keypad_Out[keypad], "KBP %s", button);
+            }
+            ELSE IF(action = "KBR")
+            {
+                button = RIGHT(command, 2);
+
+                MAKESTRING(Keypad_Out[keypad], "KBR %s", button);
+            }
+            ELSE
+            {
+                // PASS.
+            }
+        }
+        ELSE IF((LEFT(command, 2) = "TC") || FIND("Timeclocks", command))
+        {
+            IF(FIND("Enabled", command))
+            {
+                Time_Clocks_FB = ON;
+            }
+            ELSE IF(FIND("Disabled", command))
+            {
+                Time_Clocks_FB = OFF;
+            }
+            ELSE
+            {
+                PRINT("ERROR: lutron hwi central logic.usp\n");
+                PRINT("  CHANGE bi_Lutrion:\n");
+                PRINT("    Time Clock feedback does not contain state.\n");
+                PRINT("    command = %s.\n", command);
+            }
+        }
+        ELSE IF((LEFT(command, 2) = "SM") || FIND("Security mode", command))
+        {
+            IF(FIND("begin", command))
+            {
+                Security_Mode_FB = ON;
+            }
+            ELSE IF(FIND("terminated", command))
+            {
+                Security_Mode_FB = OFF;
+            }
+            ELSE
+            {
+                PRINT("ERROR: lutron hwi central logic.usp\n");
+                PRINT("  CHANGE bi_Lutrion:\n");
+                PRINT("    Security Mode feedback does not contain state.\n");
+                PRINT("    command = %s.\n", command);
+            }
+        }
+        ELSE
+        {
+            // PASS.
+        }
+    }
+}
+
+
+// Time Clocks Commands.
+
+FUNCTION TimeClocks(INTEGER state)
+{
+    IF(state = ON)
+    {
+        MAKESTRING(Lutron_TX$, "TCE\r");
+    }
+    ELSE IF(state = OFF)
+    {
+        MAKESTRING(Lutron_TX$, "TCD\r");
+    }
+}
+
+PUSH Time_Clocks_Enable
+{
+    TimeClocks(ON);
+}
+
+PUSH Time_Clocks_Disable
+{
+    TimeClocks(OFF);
+}
+
+PUSH Time_Clocks_Toggle
+{
+    TimeClocks(!Time_Clocks_FB);
+}
+
+
+// Security Mode Commands.
+
+FUNCTION SecurityMode(INTEGER state)
+{
+    IF(state = ON)
+    {
+        MAKESTRING(Lutron_TX$, "SMB\r");
+    }
+    ELSE IF(state = OFF)
+    {
+        MAKESTRING(Lutron_TX$, "SMT\r");
+    }
+}
+
+PUSH Security_Mode_Enable
+{
+    SecurityMode(ON);
+}
+
+PUSH Security_Mode_Disable
+{
+    SecurityMode(OFF);
+}
+
+PUSH Security_Mode_Toggle
+{
+    SecurityMode(!Security_Mode_FB);
+}
+
+
+// Keypad Commands.
+
+FUNCTION SendCommand(INTEGER keypad, STRING command, STRING state)
+{
+    MAKESTRING(Lutron_TX$, "%s, [%u:%u:%u], %s\r", command, KeypadProcessors[keypad], KeypadLinks[keypad], KeypadAddresses[keypad], state);
+}
+
+CHANGE Keypad_In
+{
+    INTEGER keypad, length;
+
+    STRING command[3], state[15];
+
+    keypad = GETLASTMODIFIEDARRAYINDEX();
+
+    command = LEFT(Keypad_In[keypad], 3);
+
+    length = LEN(Keypad_In[keypad]);
+
+    state = RIGHT(Keypad_In[keypad], length - 4);
+
+    SendCommand(keypad, command, state);
+}
+
+
+// Runtime
+
+FUNCTION MAIN()
+{
+    SIGNED_INTEGER returnError;
+
+    returnError = WAITFORINITIALIZATIONCOMPLETE();
+
+    IF(returnError < 0)
+    {
+        PRINT("Error waiting for initialization.\n");
+    }
+
+    InitializeKeypads();
+
+    MAKESTRING(Lutron_TX$, "TCS\r");
+
+    DELAY(10);
+
+    MAKESTRING(Lutron_TX$, "SMS\r");
+}

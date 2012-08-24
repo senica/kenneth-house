@@ -1,0 +1,365 @@
+/*
+ * Adelyte Company
+ * www.adelyte.com
+ */
+
+#SYMBOL_NAME "Climate Scheduler"
+#CATEGORY "22" // HVAC
+#DEFAULT_VOLATILE
+#ENABLE_DYNAMIC
+#ENABLE_TRACE
+
+#DEFINE_CONSTANT #MESSAGE_LEN  64
+#DEFINE_CONSTANT #SCHEDULE_LEN  5
+
+DIGITAL_INPUT Refresh, SaveSchedule, LoadSchedule;
+
+DIGITAL_INPUT DeleteRoutine[6], EditRoutine[6]; // #SCHEDULE_LEN + 1
+ANALOG_INPUT  Clock, ScheduledTime; // 0 <= Clock < 1440
+BUFFER_INPUT  ProtocolRX[255];
+
+ANALOG_OUTPUT  RecalledTime;
+STRING_OUTPUT  ProtocolTX;
+STRING_OUTPUT  ScheduleDesc[6]; // #SCHEDULE_LEN + 1
+
+STRING_PARAMETER ID[2];
+STRING_PARAMETER DaysOfWeek[13];
+
+
+NONVOLATILE INTEGER NextRoutine, Schedule[#SCHEDULE_LEN];
+NONVOLATILE STRING  Routine[#SCHEDULE_LEN][#MESSAGE_LEN];
+
+
+FUNCTION DisplayRoutine(INTEGER schedule_index)
+{
+    STRING display_time[10], display_setting[#MESSAGE_LEN];
+
+    TRACE("DisplayRoutine(%u)", schedule_index);
+
+    IF(Routine[schedule_index] = "")
+    {
+        display_time = "";
+        display_setting = "";
+    }
+    ELSE
+    {
+        MAKESTRING(display_time, "%02u:%02u", (((Schedule[schedule_index] / 60) + 11) MOD 12) + 1, Schedule[schedule_index] MOD 60);
+        MAKESTRING(display_setting, "%s", LEFT(Routine[schedule_index], LEN(Routine[schedule_index]) - 1));
+
+        IF(Schedule[schedule_index] < 720)
+            MAKESTRING(display_time, "%s am, ", display_time);
+        ELSE
+            MAKESTRING(display_time, "%s pm, ", display_time);
+    }
+
+    MAKESTRING(ScheduleDesc[schedule_index + 1], "%s%s", display_time, display_setting);
+}
+
+FUNCTION DisplayRoutines()
+{
+    INTEGER i;
+    FOR(i = 0 TO #SCHEDULE_LEN)
+    {
+        DisplayRoutine(i);
+    }
+}
+
+PUSH Refresh
+{
+	DisplayRoutines();
+}
+
+INTEGER Deleting;
+FUNCTION DeleteRoutineAtIndex(INTEGER index)
+{
+    INTEGER i;
+    
+    IF(Deleting)
+        RETURN;
+    
+    Deleting = 1;
+    
+    IF(index < #SCHEDULE_LEN)
+        FOR(i = (index - 1) TO #SCHEDULE_LEN - 1)
+        {
+            Routine[i]  = Routine[i + 1];
+            Schedule[i] = Schedule[i + 1];
+            DisplayRoutine(i);
+            
+            IF(Routine[i] = "")
+            {
+                NextRoutine = i;
+                BREAK;
+            }
+        }
+    
+    Routine[#SCHEDULE_LEN] = "";
+    Schedule[#SCHEDULE_LEN] = 0;
+    ScheduleDesc[#SCHEDULE_LEN + 1] = "";
+        
+    Deleting = 0;
+}
+
+PUSH DeleteRoutine
+{
+    INTEGER index;
+    index = GETLASTMODIFIEDARRAYINDEX();
+    
+    DeleteRoutineAtIndex(index);
+}
+
+INTEGER Edited_Routine;
+PUSH EditRoutine
+{
+    Edited_Routine = GETLASTMODIFIEDARRAYINDEX();
+    
+    ProtocolTX = Routine[Edited_Routine - 1];
+    RecalledTime = Schedule[Edited_Routine - 1];
+}
+
+RELEASE EditRoutine
+{
+    INTEGER index;
+    index = GETLASTMODIFIEDARRAYINDEX();
+    
+    IF(Edited_Routine = index)
+        Edited_Routine = 0;
+}
+
+INTEGER Sorting;
+FUNCTION SortSchedule() // Optimized bubble sort.
+{
+    INTEGER i, remaining, indexChanged;
+    INTEGER key;
+    STRING  data[#MESSAGE_LEN];
+
+    IF(Sorting)
+        RETURN;
+    
+    Sorting = 1;
+    
+    remaining = NextRoutine;
+    
+    WHILE(remaining > 1)
+    {
+        indexChanged = 0;
+        
+        FOR(i = 1 TO remaining)
+        { 
+            IF(Schedule[i] < Schedule[i - 1])
+            {
+                indexChanged = i;
+                
+                key = Schedule[i - 1];
+                Schedule[i - 1] = Schedule[i];
+                Schedule[i] = key;
+                
+                data = Routine[i - 1];
+                Routine[i - 1] = Routine[i];
+                Routine[i] = data;
+            }
+            ELSE IF(Schedule[i] = Schedule[i - 1])
+            {
+                DeleteRoutineAtIndex(i);
+            }
+        }
+        
+        remaining = indexChanged;
+    }
+    
+    DisplayRoutines();
+    
+    Sorting = 0;
+}
+
+
+INTEGER Parsing;
+CHANGE ProtocolRX
+{
+    INTEGER i;
+    STRING message[#MESSAGE_LEN];
+    
+    IF(Parsing)
+        TERMINATEEVENT;
+    
+    Parsing = 1;
+    
+    WHILE(Deleting || Sorting)
+        DELAY(10);
+    
+    IF(Edited_Routine > 0)
+        DeleteRoutineAtIndex(Edited_Routine);
+    
+    WHILE(LEN(ProtocolRX) > 1)
+    {
+        message = REMOVE("\r", ProtocolRX);
+        IF(message = "")
+        {
+            message = ProtocolRX;
+            ProtocolRX = "";
+        }
+        
+        Schedule[NextRoutine] = ScheduledTime;
+        Routine[NextRoutine] = message;
+        
+        SortSchedule();
+        
+        IF(NextRoutine < #SCHEDULE_LEN)
+            NextRoutine = NextRoutine + 1;
+        ELSE
+            TRACE("TSTAT-Scheduler  Maximum schedules reached. Saving over Routine %u.", NextRoutine);
+    }
+    
+    Parsing = 0;
+}
+
+STRING_FUNCTION DayCode(INTEGER day_of_week)
+{
+    SWITCH(day_of_week)
+    {
+        CASE(0): RETURN("U");
+        CASE(1): RETURN("M");
+        CASE(2): RETURN("T");
+        CASE(3): RETURN("W");
+        CASE(4): RETURN("R");
+        CASE(5): RETURN("F");
+        CASE(6): RETURN("S");
+        DEFAULT: RETURN("Err");
+    }
+}
+
+
+CHANGE Clock
+{
+    INTEGER i;
+    
+    IF(FIND(DayCode(GETDAYOFWEEKNUM()), UPPER(DaysOfWeek)))
+    {
+        FOR(i = 0 TO 5)
+        {
+            IF(Schedule[i] = Clock)
+                IF(Routine[i] != "")
+                    ProtocolTX = Routine[i];
+        }
+    }
+}
+
+
+// File Save and Load
+
+#DEFINE_CONSTANT #NAME_LEN  64
+#DEFINE_CONSTANT #FILE_LEN 414 // (#MESSAGE_LEN + 5) * (#SCHEDULE_LEN + 1)
+
+INTEGER FileReadWrite;
+
+FUNCTION HandleError(SIGNED_INTEGER error, SIGNED_INTEGER handle, STRING command)
+{
+    GENERATEUSERERROR("Scheduler.usp | %s generated error %d. File operation terminated.", command, error);
+    IF(handle > 0) FILECLOSE(handle);
+    ENDFILEOPERATIONS();
+    FileReadWrite = 0;
+}
+
+PUSH SaveSchedule
+{
+    INTEGER i;
+    SIGNED_INTEGER error, handle;
+    STRING file_name[#NAME_LEN], file_buffer[#FILE_LEN];
+    
+    IF(FileReadWrite) TERMINATEEVENT;
+    
+    FileReadWrite = 1;
+    
+    handle = 0;
+    file_buffer = "";
+    
+    FOR(i = 0 TO #SCHEDULE_LEN)
+    {
+        MAKESTRING(file_buffer, "%s%u %s", file_buffer, Schedule[i], Routine[i]);
+    }
+    
+    error = STARTFILEOPERATIONS();
+    IF(error < 0) {HandleError(error, handle, "STARTFILEOPERATIONS()"); TERMINATEEVENT;}
+    
+    MAKESTRING(file_name, "\\CF0\\Crescendo\\Schedules\\E8%s_%s.txt", ID, DaysOfWeek);
+    handle = FILEOPEN(file_name, _O_WRONLY|_O_TEXT|_O_CREAT);
+    IF(handle < 0) {HandleError(handle, handle, "FILEOPEN()"); TERMINATEEVENT;}
+    
+    error = FILEWRITE(handle, file_buffer, #FILE_LEN);
+    IF(error < 0) {HandleError(error, handle, "FILEWRITE()"); TERMINATEEVENT;} 
+       
+    error = FILECLOSE(handle);
+    IF(error < 0) {HandleError(error, handle, "FILECLOSE()"); TERMINATEEVENT;}
+    
+    error = ENDFILEOPERATIONS();
+    IF(error < 0) {HandleError(error, handle, "ENDFILEOPERATIONS()"); TERMINATEEVENT;}
+    
+    FileReadWrite = 0;
+    
+    TRACE("Scheduler.usp | File '%s' written successfully.", file_name);
+}
+
+PUSH LoadSchedule
+{
+    SIGNED_INTEGER error, handle;
+    STRING file_name[#NAME_LEN], file_buffer[#FILE_LEN];
+    
+    IF(FileReadWrite) TERMINATEEVENT;
+    
+    FileReadWrite = 1;
+    
+    handle = 0;
+    file_buffer = "";
+    
+    error = STARTFILEOPERATIONS();
+    IF(error < 0) {HandleError(error, handle, "STARTFILEOPERATIONS()"); TERMINATEEVENT;}
+    
+    MAKESTRING(file_name, "\\CF0\\Crescendo\\Schedules\\E8%s_%s.txt", ID, DaysOfWeek);
+    handle = FILEOPEN(file_name, _O_RDONLY|_O_TEXT);
+    IF(handle < 0) {HandleError(handle, handle, "FILEOPEN()"); TERMINATEEVENT;}
+    
+    error = FILEREAD(handle, file_buffer, #FILE_LEN);
+    IF(error < 0) {HandleError(error, handle, "FILEREAD()"); TERMINATEEVENT;} 
+       
+    error = FILECLOSE(handle);
+    IF(error < 0) {HandleError(error, handle, "FILECLOSE()"); TERMINATEEVENT;}
+    
+    error = ENDFILEOPERATIONS();
+    IF(error < 0) {HandleError(error, handle, "ENDFILEOPERATIONS()"); TERMINATEEVENT;}
+    
+    SETARRAY(Schedule, 0);
+    SETARRAY(Routine, "");
+    
+    NextRoutine = 0;
+    WHILE(FIND("\r", file_buffer))
+    {
+        Schedule[NextRoutine] = ATOI(REMOVE(" ", file_buffer));
+        Routine[NextRoutine]  = REMOVE("\r", file_buffer);
+        NextRoutine = NextRoutine + 1;
+    }
+    
+    DisplayRoutines();
+    
+    FileReadWrite = 0;
+    
+    TRACE("Scheduler.usp | File '%s' read successfully.", file_name);
+}
+
+
+// Runtime
+
+FUNCTION Main()
+{
+    Parsing = 0;
+    
+    WAITFORINITIALIZATIONCOMPLETE();
+    
+    IF(NextRoutine > #SCHEDULE_LEN)
+    {
+        NextRoutine = 0;
+        SETARRAY(Routine, "");
+        SETARRAY(Schedule, 0);
+    }
+    
+    DisplayRoutines();
+}

@@ -1,0 +1,269 @@
+/***********************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+***********************************************************************************/
+/*
+Dealer Name:	Crestron Electronics
+System Name:
+System Number:
+Programmer:		PAC
+Comments:
+*/
+/***********************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+***********************************************************************************/
+#SYMBOL_NAME "Honeywell Vista 128/250FBP + 128/250BPE Queue v4.0"
+// #HINT ""
+#DEFINE_CONSTANT	ciQUEUESIZE				100
+#DEFINE_CONSTANT	ciQUEUELEN				25
+#DEFINE_CONSTANT	ciMAXPARTITIONS		8
+
+// #CATEGORY "" 
+#CATEGORY "21" // Security
+#DEFAULT_VOLATILE
+// #DEFAULT_NONVOLATILE
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+/***********************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+***********************************************************************************/
+DIGITAL_INPUT	Poll, Send_Next_In, Receiving, Refresh, Poll_Partition[ciMAXPARTITIONS];
+BUFFER_INPUT	From_Module$[250], From_Device$[250];
+
+DIGITAL_OUTPUT	Send_Next_Out, Communication_On_Fb, Communication_Off_Fb,
+								No_Keypad_Updates_Fb;
+STRING_OUTPUT	To_Device$, To_Partition$[ciMAXPARTITIONS];
+/***********************************************************************************
+  Global Variables
+  (Uncomment and declare global variables as needed)
+  Note:  Be sure to initialize all declared STRING variables as needed
+         For example, in Function Main: myString = "";
+***********************************************************************************/
+INTEGER	iPartitionSent, iNextStore, iNextSend, iNextPoll, iSendOk, iTemp, iFlag1,
+				iFlag2, a, b, c, iPollPartitions[ciMAXPARTITIONS], piTemp;
+STRING	sQueue[ciQUEUESIZE][ciQUEUELEN], sTemp1[250], sTemp2[50], sTemp3[15];
+/***********************************************************************************
+  Functions
+  (Add any additional functions here)
+  Note:  Functions must be physically placed before the location in
+         the code that calls them.
+***********************************************************************************/
+Function fTimeOut()
+{
+	wait(3000, wTimeOut)
+	{
+		Send_Next_Out = 1;
+	}
+}
+
+String_Function sfCheckSum(STRING fsTemp)
+{
+	INTEGER a, iTemp;
+	
+	iTemp = 0;
+	for(a = 1 to len(fsTemp))
+	{
+		iTemp = iTemp + byte(fsTemp, a);
+	}
+	iTemp = iTemp mod 0x100;
+	iTemp = 0x100 - iTemp;
+	makestring(fsTemp, "%s%02X\x0D\x0A", fsTemp, iTemp);
+	Return (fsTemp);
+}
+/***********************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+***********************************************************************************/
+PUSH Poll
+PUSH Refresh
+{
+	piTemp = 0;
+	if((iSendOk = 1) && (Receiving = 0))
+	{
+		for(a = 1 to ciMAXPARTITIONS)
+		{
+			if(Poll_Partition[a] = 1)
+			{
+				if(piTemp = 0)
+				{
+					makestring(sTemp3, "09KD%u00", a);
+					To_Device$ = sfCheckSum(sTemp3);
+					call fTimeOut();
+					iPartitionSent = 1;
+					iSendOk = 0;
+					piTemp = 1;
+				}
+				else
+				{
+					makestring(sTemp3, "09KD%u00", a);
+					sQueue[iNextStore] = sfCheckSum(sTemp3);
+					iNextStore = iNextStore + 1;
+					if(iNextStore > ciQUEUESIZE)
+					{
+						iNextStore = 1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		for(a = 1 to ciMAXPARTITIONS)
+		{
+			if(Poll_Partition[a] = 1)
+			{
+				makestring(sTemp3, "09KD%u00", a);
+				sQueue[iNextStore] = sfCheckSum(sTemp3);
+				iNextStore = iNextStore + 1;
+				if(iNextStore > ciQUEUESIZE)
+				{
+					iNextStore = 1;
+				}
+			}
+		}
+	}
+}
+
+Push Send_Next_In
+{
+	Send_Next_Out = 0;
+}
+
+RELEASE Send_Next_In
+{
+	if((iSendOk = 1) && (Receiving = 0))
+	{
+		if(iNextStore <> iNextSend)
+		{
+			if(find("09KD", sQueue[iNextSend]) > 0)
+			{
+				iPartitionSent = atoi(mid(sQueue[iNextSend], 5, 1));
+			}
+			To_Device$ = sQueue[iNextSend];
+			call fTimeOut();
+			iSendOk = 0;
+			iNextSend = iNextSend + 1;
+			if(iNextSend > ciQUEUESIZE)
+			{
+				iNextSend = 1;
+			}
+		}
+	}
+}
+
+Change From_Module$
+{
+	if(iFlag1 = 0)
+	{
+		iFlag1 = 1;
+		while(find("\x0D\x0A", From_Module$) > 0)
+		{
+			sTemp2 = remove("\x0D\x0A", From_Module$);
+			if((iSendOk = 1) && (Receiving = 0))
+			{
+				To_Device$ = sTemp2;
+				call fTimeOut();
+				iSendOk = 0;
+				sTemp2 = "";
+			}
+			else
+			{
+				sQueue[iNextStore] = sTemp2;
+				sTemp2 = "";
+				iNextStore = iNextStore + 1;
+				if(iNextStore > ciQUEUESIZE)
+				{
+					iNextStore = 1;
+				}
+			}
+		}
+		iFlag1 = 0;
+	}
+}
+
+Release Receiving
+{
+	if(iFlag2 = 0)
+	{
+		iFlag2 = 1;
+		while(len(From_Device$) > 0)
+		{
+			if(find("\x0D\x0A", From_Device$) > 0)
+			{
+				sTemp1 = remove("\x0D\x0A", From_Device$);
+			}
+			else
+			{
+				sTemp1 = From_Device$;
+				clearbuffer(From_Device$);
+			}
+			cancelwait(wTimeOut);
+			if(find("29kd", sTemp1) > 0)
+			{
+				To_Partition$[iPartitionSent] = sTemp1;
+			}
+			else if(find("08XN0092\x0D\x0A", sTemp1) > 0)	//Communication On
+			{
+				delay(10);
+				Communication_Off_Fb = 0;
+				Communication_On_Fb = 1;
+			}
+			else if(find("08XF009A\x0D\x0A", sTemp1) > 0)	//Communication Off
+			{
+				iSendOk = 0;
+				Communication_On_Fb = 0;
+				Communication_Off_Fb = 1;
+			}
+			else if(find("10DC", sTemp1) > 0)
+			{
+				No_Keypad_Updates_Fb = 0;
+				for(b = 1 to 8)
+				{
+					iTemp = atoi(mid(sTemp1, b + 4, 1));
+					if((iTemp <> 0) && (Poll_Partition[iTemp] = 1))
+					{
+						makestring(sTemp3, "09KD%u00", iTemp);
+						sQueue[iNextStore] = sfCheckSum(sTemp3);
+						iNextStore = iNextStore + 1;
+						if(iNextStore > ciQUEUESIZE)
+						{
+							iNextStore = 1;
+						}
+					}
+					else if(iTemp = 0)
+					{
+						break;
+					}
+				}
+			}
+			if(len(From_device$) = 0)
+			{
+				iSendOk = 1;
+				Send_Next_Out = 1;
+			}
+		}
+		iFlag2 = 0;
+	}
+}
+/***********************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+***********************************************************************************/
+Function Main()
+{
+	iFlag1 = 0;
+	iFlag2 = 0;
+	iSendOk = 1;
+	Communication_Off_Fb = 0;
+	Communication_On_Fb = 1;
+	iNextStore = 1;
+	iNextSend = 1;
+	iNextPoll = 0;
+	No_Keypad_Updates_Fb = 1;
+}

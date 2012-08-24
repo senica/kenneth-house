@@ -1,0 +1,89 @@
+[BEGIN]
+  Version=1
+[END]
+[BEGIN]
+  ObjTp=FSgntr
+  Sgntr=UserSPlus
+  RelVrs=1
+  IntStrVrs=1
+  SPlusVrs=3.03.16
+  CrossCplrVrs=1.3
+[END]
+[BEGIN]
+  ObjTp=Hd
+  Cmn1=	For use inside the Honeywell Vista 128/250FBP & 128/250BPE Keypad||1
+  Cmn2=v4.0 module only.
+[END]
+[BEGIN]
+  ObjTp=Symbol
+  Exclusions=1,19,20,21,88,89,310,718,756,854,
+  Exclusions_CDS=5
+  Name=Honeywell Vista 128/250FBP & 128/250BPE Keypad Partition Feedback v4.0
+  SmplCName=Honeywell Vista 128FBP+250FBP Keypad Partition v4.0.usp
+  Code=1
+  SysRev5=4.000
+  SMWRev=2.02.00
+  InputCue1=Refresh
+  InputSigType1=Digital
+  InputCue2=Send_Keys
+  InputSigType2=Digital
+  InputCue3=Key[#]
+  InputSigType3=Digital
+  OutputCue1=Back_Light_Fb
+  OutputSigType1=Digital
+  InputList2Cue1=Partition
+  InputList2SigType1=Serial
+  InputList2Cue2=From_Module$
+  InputList2SigType2=Serial
+  OutputList2Cue1=To_Queue$
+  OutputList2SigType1=Serial
+  OutputList2Cue2=LED_Status
+  OutputList2SigType2=Analog
+  OutputList2Cue3=Back_Light_Mode
+  OutputList2SigType3=Analog
+  OutputList2Cue4=Text_Line_1$
+  OutputList2SigType4=Serial
+  OutputList2Cue5=Text_Line_2$
+  OutputList2SigType5=Serial
+  ParamCue1=[Reference Name]
+  MinVariableInputs=3
+  MaxVariableInputs=17
+  MinVariableInputsList2=2
+  MaxVariableInputsList2=2
+  MinVariableOutputs=1
+  MaxVariableOutputs=1
+  MinVariableOutputsList2=5
+  MaxVariableOutputsList2=5
+  MinVariableParams=0
+  MaxVariableParams=0
+  Expand=expand_separately
+  Expand2=expand_separately
+  ProgramTree=Logic
+  SymbolTree=21
+  Hint=
+  PdfHelp=
+  HelpID= 
+  Render=4
+  Smpl-C=16
+  CompilerCode=-48
+  CompilerParamCode=27
+  CompilerParamCode5=14
+  NumFixedParams=1
+  Pp1=1
+  MPp=1
+  NVStorage=10
+  ParamSigType1=String
+  SmplCInputCue1=o#
+  SmplCOutputCue1=i#
+  SmplCInputList2Cue1=an#
+  SmplCOutputList2Cue1=ai#
+  SPlus2CompiledName=S2_Honeywell_Vista_128FBP_250FBP_Keypad_Partition_v4_0
+  SymJam=NonExclusive
+  FileName=Honeywell Vista 128FBP+250FBP Keypad Partition v4.0.ush
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=1
+  Tp=1
+  NoS=False
+[END]

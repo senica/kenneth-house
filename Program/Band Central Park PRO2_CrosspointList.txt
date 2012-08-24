@@ -1,0 +1,74 @@
+Crosspoint listing for C:\Projects\Kenneth Douglas\House\kenneth-house\Program\Band Central Park PRO2.SMW
+
+Note:  Crosspoint symbols with EquipID or ControlID set to 0d are not routeable.
+
+Equipment Crosspoint Routing.                                                                       EquipID
+===========================================================================================================
+S-2 in macro S-2.2.1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          53505
+el__.umc)                                                                                           
+S-2 in macro S-2.2.2:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          53506
+el__.umc)                                                                                           
+S-2 in macro S-2.3.1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          53761
+el__.umc)                                                                                           
+S-2 in macro S-2.3.2:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          53762
+el__.umc)                                                                                           
+S-2 in macro S-2.4.1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          54017
+el__.umc)                                                                                           
+S-2 in macro S-2.4.2:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\__Mod          54018
+el__.umc)                                                                                           
+S-2 in macro S-4.1.3.2:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO          54273
+\__Model__.umc)                                                                                     
+S-2 in macro S-4.1.2.2:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO          54288
+\__Model__.umc)                                                                                     
+S-2 in macro S-4.1.1.1.1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMAC          54497
+RO\__Model__.umc)                                                                                   
+S-2 in macro S-4.2.1.1.1.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54529
+USRMACRO\__Model__.umc)                                                                             
+S-2 in macro S-4.2.1.1.2.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54530
+USRMACRO\__Model__.umc)                                                                             
+S-2 in macro S-4.2.1.1.3.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54531
+USRMACRO\__Model__.umc)                                                                             
+S-2 in macro S-4.2.1.1.4.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54532
+USRMACRO\__Model__.umc)                                                                             
+S-2 in macro S-4.2.1.1.5.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54533
+USRMACRO\__Model__.umc)                                                                             
+S-2 in macro S-4.2.1.2.1.1:S-1:S-1:S-1 (Module File C:\Program Files (x86)\Crestron\Simpl\          54576
+USRMACRO\__Model__.umc)                                                                             
+
+Control Crosspoint Routing.                                                                         ControlID
+=============================================================================================================
+S-2 in macro S-2.2.1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          4609
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.2.2:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          4610
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.2.1:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          4865
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.2.2:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          4866
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.2.1:S-3.3.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          5377
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.2.2:S-3.3.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          5378
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.3.1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          9217
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.3.2:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          9218
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.3.1:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          9473
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.3.2:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          9474
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.4.1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          13313
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.4.2:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          13314
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.4.1:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          13569
+_Controller__.umc)                                                                                  
+S-2 in macro S-2.4.2:S-3.2.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRMACRO\_          13570
+_Controller__.umc)                                                                                  
+S-2 in macro S-4.1.3.2:S-1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRM          17665
+ACRO\__Controller__.umc)                                                                            
+S-2 in macro S-4.1.2.2:S-1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\USRM          17680
+ACRO\__Controller__.umc)                                                                            
+S-2 in macro S-4.1.1.1.1:S-1:S-3.1.1 (Module File C:\Program Files (x86)\Crestron\Simpl\US          17889
+RMACRO\__Controller__.umc)                                                                          
+

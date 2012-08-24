@@ -1,0 +1,98 @@
+/***********************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+***********************************************************************************/
+/*
+Dealer Name:	Crestron Electronics
+System Name:
+System Number:
+Programmer:		PAC
+Comments:
+*/
+/***********************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+***********************************************************************************/
+#SYMBOL_NAME "Honeywell Vista 128/250FBP + 128/250BPE Event Log Driver v4.0"
+// #HINT ""
+#DEFINE_CONSTANT	ciMAXZONES	250
+// #CATEGORY "" 
+#CATEGORY "21" // Security
+#DEFAULT_VOLATILE
+// #DEFAULT_NONVOLATILE
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+/***********************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+***********************************************************************************/
+BUFFER_INPUT	From_Device$[250];
+
+ANALOG_OUTPUT	Zone_Status[ciMAXZONES];
+/***********************************************************************************
+  Global Variables
+  (Uncomment and declare global variables as needed)
+  Note:  Be sure to initialize all declared STRING variables as needed
+         For example, in Function Main: myString = "";
+***********************************************************************************/
+INTEGER	iTempEvent, iTempZone, iZone[ciMAXZONES], iFlag1, iTemp;
+STRING	sTemp[250];
+/***********************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+***********************************************************************************/
+CHANGE From_Device$
+{
+	if(iFlag1 = 0)
+	{
+		iFlag1 = 1;
+		while(find("\x0D\x0A", From_Device$) > 0)
+		{
+			sTemp = remove("\x0D\x0A", From_Device$);
+			if(find("1Bnq", sTemp) > 0)
+			{
+				iTemp = byte(sTemp,5);
+				if((iTemp >= 48) && (iTemp <= 57))
+				{
+					iTemp = iTemp - 48;
+				}
+				else if((iTemp >= 65) && (iTemp <= 70))
+				{
+					iTemp = iTemp - 55;
+				}
+				iTempEvent = iTemp * 16;
+				iTemp = byte(sTemp, 6);
+				if((iTemp >= 48) && (iTemp <= 57))
+				{
+					iTemp = iTemp - 48;
+				}
+				else if((iTemp >= 65) && (iTemp <= 70))
+				{
+					iTemp = iTemp - 55;
+				}
+				iTempEvent = iTempEvent + iTemp;
+				iTempZone = atoi(mid(sTemp, 7, 3));
+				if((iTempZone <= ciMAXZONES) && (iTempZone S> 0))
+				{
+					iZone[iTempZone] = iTempEvent;
+					Zone_Status[iTempZone] = iZone[iTempZone];
+				}
+				iTempZone = 0;
+				iTempEvent = 0;
+			}
+		}
+		iFlag1 = 0;
+	}
+}
+/***********************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+***********************************************************************************/
+Function Main()
+{
+	iFlag1 = 0;
+}

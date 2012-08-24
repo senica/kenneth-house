@@ -1,0 +1,92 @@
+/*
+ * Adelyte Company
+ * www.adelyte.com
+ */
+
+#SYMBOL_NAME "freeDNS Client"
+#CATEGORY "46" "Crescendo" // Custom
+#DEFAULT_VOLATILE
+#ENABLE_DYNAMIC
+#ENABLE_TRACE
+
+
+// Inputs and Outputs
+
+#DEFINE_CONSTANT  KeyLength      48
+#DEFINE_CONSTANT  BufferLength 1024
+#DEFINE_CONSTANT  ClockMax     1439
+
+ANALOG_INPUT Clock;
+
+INTEGER_PARAMETER UpdateInterval;
+STRING_PARAMETER  Key[KeyLength];
+
+TCP_CLIENT struct_TCP[BufferLength];
+
+
+#BEGIN_PARAMETER_PROPERTIES UpdateInterval
+    PROPVALIDUNITS   = UNITDECIMAL;
+    PROPBOUNDS       = 5d, ClockMax d;
+    PROPDEFAULTVALUE = 60d;    
+    
+    PROPSHORTDESCRIPTION = "The number of minutes between updates.";
+#END_PARAMETER_PROPERTIES
+    
+
+
+// TCP Status
+
+INTEGER_FUNCTION Connect()
+{
+    TRACE("freeDNS | Connect()");
+    SOCKETDISCONNECTCLIENT(struct_TCP); // Must be disconnected before a new connection can be established.
+    RETURN(SOCKETCONNECTCLIENT(struct_TCP, "freedns.afraid.org", 80, 0));
+}
+
+SOCKETCONNECT struct_TCP
+{
+    STRING tcp_tx[BufferLength];
+    
+    MAKESTRING(tcp_tx, "GET /dynamic/update.php?%s HTTP/1.1\nHost: freedns.afraid.org\n\n", Key);
+    SOCKETSEND(struct_TCP, tcp_tx);
+    
+    TRACE("freeDNS | SOCKETSEND('%s')", tcp_tx);
+}
+
+SOCKETSTATUS struct_TCP
+{
+    TRACE("freeDNS | SOCKETSTATUS() = %u", struct_TCP.SocketStatus);
+}
+
+INTEGER UpdateTime;
+SOCKETRECEIVE struct_TCP
+{
+    UpdateTime = (Clock + UpdateInterval) MOD (ClockMax + 1);
+    TRACE("freeDNS | %s", struct_TCP.SocketRxBuf);
+    CLEARBUFFER(struct_TCP.SocketRxBuf);
+}
+
+
+// Events
+
+CHANGE Clock
+{
+    IF(Clock >= UpdateTime)
+        Connect();
+}
+
+
+// Runtime
+
+FUNCTION Main()
+{
+    INTEGER return_error;
+
+    return_error = WAITFORINITIALIZATIONCOMPLETE();
+    
+    IF(return_error < 0)
+        TRACE("ERROR in %s 'freeDNS Updater.usp': WAITFORINITALIZATIONCOMPLETE() = %d", GETSYMBOLINSTANCENAME(), return_error);
+    
+    UpdateTime = Clock + 2; // Update two minutes after program reboot.
+    
+}

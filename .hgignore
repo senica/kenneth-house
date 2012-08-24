@@ -1,0 +1,27 @@
+syntax: glob
+
+# SIMPL Windows and VTPro-e
+*.ASV
+
+# SIMPL Windows
+Old/
+SPlsWork/
+*CrosspointList.txt
+*.lpz
+*.spz
+*.sm2
+*.um2
+
+# VTPro-e
+*.vtz
+*.iPad/
+*.Upx/
+*.xexe/
+*.xweb/
+
+# D3Pro
+Status$
+AUTOSAVE/
+*_Config.smw
+*.ldb
+*.mdb
